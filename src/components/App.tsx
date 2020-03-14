@@ -1,31 +1,26 @@
 import React from 'react';
 import { connect } from "react-redux";
-import { state } from '../reducer';
+import { state } from "../reducer/index";
 
-import ParentElement from "./parentElement";
-import ContactPhones from "./contactPhones";
-import Addresses from "./addresses";
+import Constructor from "./constructor";
+import Result from "./result";
 
-function App(props: any) {
-  let elementJSX: JSX.Element;
-  if (props.showElement === "PARENT") {
-    elementJSX = <ParentElement />;
-  } else if (props.showElement === "CONTACTPHONES") {
-    elementJSX = <ContactPhones />
-  } else {
-    elementJSX = <Addresses />
-  };
+interface props {
+  showResult: boolean
+};
+
+function App(props: props) {
 
   return (
-      <div className="container my-wrap">
-        {elementJSX!}
-      </div>
+    <React.Fragment>
+      {props.showResult ? <Result /> : <Constructor />}
+    </React.Fragment>
   );
 }
 
 export default connect(
   (state: state) => ({
-    showElement: state.showElement
+    showResult: state.showResult
   }),
   (dispatch) => ({})
 )(App);

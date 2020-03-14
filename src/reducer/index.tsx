@@ -1,131 +1,190 @@
-interface address {
-    street: string,
-    city: string,
-    postalCode: number
-};
-
 export interface state {
-    id: number,
-    name: string,
-    newPhon: number,
-    newStreet: string,
-    newCity: string,
-    newPostalCode: number,
-    contactPhones: Array<number>,
-    addresses: Array<address>,
-    showElement: string
+    text: string,
+    params: any,
+    types: any,
+    showResult: boolean,
+    showObj: any
 };
 
 const initialState: state = {
-    id: NaN,
-    name: "",
-    newPhon: NaN,
-    newStreet: "",
-    newCity: "",
-    newPostalCode: NaN,
-    contactPhones: new Array(),
-    addresses: new Array(),
-    showElement: "PARENT",
+    text: "",
+    params: new Object(),
+    types: new Object(),
+    showResult: false,
+    showObj: false
+};
+
+// PARSER
+function parser(text: string) {
+    let arr = text.split("\n");
+    let objParams: any = new Object();
+    let objTypes: any = new Object();
+    let objSchema: any = new Object();
+
+    for (let i: number = 1; i < arr.length; ++i) {
+        let string: string = arr[i];
+        string = string.trim();
+        if (string === "") continue;
+        if (string === "}") break;
+
+        let brokenStr = string.split(" ");
+
+        if (brokenStr[0] === "numeric:") {
+            objParams[brokenStr[1]] = NaN;
+            objTypes[brokenStr[1]] = "number";
+        } else if (brokenStr[0] === "string:") {
+            objParams[brokenStr[1]] = "";
+            objTypes[brokenStr[1]] = "text";
+        } else if (brokenStr[0] === "schema") {
+            // SCHEMA
+            let name: string | Array<string> = brokenStr[1].split("");
+            name.splice(name.length - 1, 1);
+            name = name.join("");
+            objSchema[name] = new Object();
+            let values: any = new Object();
+
+            ++i;
+            for (; ; ++i) {
+                let string: string = arr[i];
+                string = string.trim();
+
+                if (string === "}") {
+                    let nameTypesObj = objTypes[name];
+                    delete objTypes[name];
+                    objTypes[nameTypesObj] = objSchema[name];
+                    objParams[nameTypesObj] = {
+                        stor: new Array(),
+                        values
+                    };
+                    break;
+                };
+
+                let brokenStr = string.split(" ");
+
+                if (brokenStr[0] === "numeric:") {
+                    objSchema[name] = {
+                        ...objSchema[name],
+                        [brokenStr[1]]: "number"
+                    };
+                    values[brokenStr[1]] = NaN;
+                } else if (brokenStr[0] === "string:") {
+                    objSchema[name] = {
+                        ...objSchema[name],
+                        [brokenStr[1]]: "text"
+                    };
+                    values[brokenStr[1]] = "";
+                };
+            };
+        } else {
+            let brokenKey: string | Array<string> = brokenStr[0].split("");
+            brokenKey.splice(0, 6);
+            brokenKey.splice(brokenKey.length - 2, 2);
+            brokenKey = brokenKey.join("");
+
+            if (brokenKey === "numeric") {
+                objTypes[brokenStr[1]] = {
+                    [brokenStr[1]]: "number"
+                };
+                objParams[brokenStr[1]] = {
+                    stor: new Array(),
+                    values: {
+                        [brokenStr[1]]: NaN
+                    }
+                };
+            } else if (brokenKey === "string") {
+                objTypes[brokenStr[1]] = {
+                    [brokenStr[1]]: "text"
+                };
+                objParams[brokenStr[1]] = {
+                    stor: new Array(),
+                    values: {
+                        [brokenStr[1]]: ""
+                    }
+                };
+            } else {
+                objTypes[brokenKey] = brokenStr[1];
+            };
+        };
+    };
+    // end cycle
+    return {
+        params: objParams,
+        types: objTypes
+    };
 };
 
 export default (state = initialState, action: any) => {
-    // CHANGEINPUT
-    if (action.type === "CHANGEINPUT") {
-        if (action.target === "id") {
-            return {
-                ...state,
-                id: action.value
-            };
-        } else if (action.target === "name") {
-            return {
-                ...state,
-                name: action.value
-            };
-        } else if (action.target === "phon") {
-            return {
-                ...state,
-                newPhon: action.value
-            };
-        } else if (action.target === "street") {
-            return {
-                ...state,
-                newStreet: action.value
-            };
-        } else if (action.target === "city") {
-            return {
-                ...state,
-                newCity: action.value
-            };
-        } else if (action.target === "postalCode") {
-            return {
-                ...state,
-                newPostalCode: action.value
-            };
-        };
-    };
-
-    // CHANGESELEMENT
-    if (action.type === "CHANGESELEMENT") {
+    // CHANGESTEXT
+    if (action.type === "CHANGESTEXT") {
         return {
             ...state,
-            showElement: action.showElement
+            text: action.text
         };
     };
 
-    // SAVEPHONE
-    if (action.type === "SAVEPHONE") {
-        if (state.newPhon) {
-            let contactPhones = state.contactPhones;
-            contactPhones.push(state.newPhon);
-
-            return {
-                ...state,
-                contactPhones,
-                newPhon: NaN
-            };
+    // READTEXT
+    if (action.type === "READTEXT") {
+        let obj = parser(state.text);
+        return {
+            ...state,
+            ...obj,
+            showResult: true
         };
     };
 
-    // SAVEADDRESS
-    if (action.type === "SAVEADDRESS") {
-        if (state.newStreet !== "" && state.newCity !== "" && !isNaN(state.newPostalCode)) {
-            let addresses = state.addresses;
-            let address: address = {
-                street: state.newStreet,
-                city: state.newCity,
-                postalCode: state.newPostalCode
-            };
-            addresses.push(address);
+    // CHANGESINPUT
+    if (action.type === "CHANGESINPUT") {
+        let params = Object.assign({}, state.params);
 
-            return {
-                ...state,
-                addresses,
-                newStreet: "",
-                newCity: "",
-                newPostalCode: NaN
-            };
-        }
-    };
-
-    // REMOVPHONE
-    if (action.type === "REMOVPHONE") {
-        let contactPhones = state.contactPhones;
-        contactPhones.splice(action.i, 1)
+        if (action.secondPath) {
+            params[action.secondPath].values[action.path] = action.value;
+        } else {
+            params[action.path] = action.value;
+        };
 
         return {
             ...state,
-            contactPhones
+            params
         };
     };
 
-    // REMOVADDRESS
-    if (action.type === "REMOVADDRESS") {
-        let addresses = state.addresses;
-        addresses.splice(action.i, 1)
+    // CHANGESOBJEKT
+    if (action.type === "CHANGESOBJEKT") {
+        return {
+            ...state,
+            showObj: action.value
+        };
+    };
+
+    // SAVEDATA
+    if (action.type === "SAVEDATA") {
+        let params = Object.assign({}, state.params);
+        params[state.showObj].stor.push(Object.assign({}, state.params[state.showObj].values));
+        let obj = params[state.showObj].values;
+
+        for (let key in obj) {
+            if (typeof(obj[key]) === "number") {
+                obj[key] = NaN;
+            } else {
+                obj[key] = "";
+            };
+        };
 
         return {
             ...state,
-            addresses
+            params
+        };
+    };
+
+    // DELSTRING
+    if (action.type === "DELSTRING") {
+        let params = Object.assign({}, state.params);
+        let stor = params[state.showObj].stor;
+        stor.splice(action.i, 1);
+
+        return {
+            ...state,
+            params
         };
     };
 
