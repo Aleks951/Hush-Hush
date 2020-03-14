@@ -41,6 +41,8 @@ function Result(props: props) {
         };
     };
 
+    // если была нажата кнопка для перехода к другой форме
+    // Блок наполнен инпутами (по условию) и таблицей
     if (props.showObj) {
         let arrInputs: Array<JSX.Element> = new Array();
         let head: Array<JSX.Element> = [
@@ -117,6 +119,7 @@ function Result(props: props) {
             </div>
         );
     };
+    // end form
 
     return (
         <div className="container form-group mt-5 border border-warning rounded p-5">
